@@ -1,0 +1,53 @@
+ISIC2016_WithMasks_Train
+ISIC2016_WithMasks_Test
+
+# dataset-distillation
+
+
+dataset-distillation/__pycache__
+dataset-distillation/*.pth
+dataset-distillation/*/**/__pycache__
+dataset-distillation/*/*.pyc
+dataset-distillation/*/**/*.pyc
+dataset-distillation/*/**/**/*.pyc
+dataset-distillation/*/**/**/**/*.pyc
+dataset-distillation/*/**/**/**/**/*.pyc
+dataset-distillation/.mypy_cache
+
+dataset-distillation/results
+dataset-distillation/results/
+dataset-distillation/data
+dataset-distillation/data/
+dataset-distillation/models
+dataset-distillation/models/
+
+# IPython notebook checkpoints
+dataset-distillation/.ipynb_checkpoints
+
+# Editor temporaries
+dataset-distillation/*.swn
+dataset-distillation/*.swo
+dataset-distillation/*.swp
+dataset-distillation/*~
+
+# macOS dir files
+dataset-distillation/.DS_Store
+
+dataset-distillation/.gdb_history
+
+
+# DatasetCondensation
+
+
+DatasetCondensation/data/
+DatasetCondensation/result/
+DatasetCondensation/__pycache__/
+
+
+# Efficient-Dataset-Condensation
+
+
+Efficient-Dataset-Condensation/results
+Efficient-Dataset-Condensation/pretrained
+Efficient-Dataset-Condensation/__pycache__
+
