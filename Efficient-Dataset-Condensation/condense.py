@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms
-from data import transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion, transform_isic2016, transform_oct
-from data import TensorDataset, ImageFolder, ISIC2016, OCTDataset, save_img
+from data import transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion, transform_isic2016, transform_oct, transform_derma
+from data import TensorDataset, ImageFolder, ISIC2016, OCTDataset, Derma, save_img
 from data import ClassDataLoader, ClassMemDataLoader, MultiEpochsDataLoader
 from data import MEANS, STDS
 from train import define_model, train_epoch
@@ -209,6 +209,8 @@ class Synthesizer():
             train_transform, _ = transform_isic2016(augment=augment, from_tensor=True)
         elif args.dataset == 'oct':
             train_transform, _ = transform_oct(augment=augment, from_tensor=True)
+        elif args.dataset == 'derma':
+            train_transform, _ = transform_derma(augment=augment, from_tensor=True)
         data_dec = []
         target_dec = []
         for c in range(self.nclass):
@@ -320,6 +322,17 @@ def load_resized_data(args):
 
         val_dataset = OCTDataset(args.data_dir, train=False, transform=transform_test)
         train_dataset.nclass = 4
+
+    elif args.dataset == 'derma':
+        train_dataset = Derma(args.data_dir,
+                                train=True,
+                                transform=transforms.ToTensor())
+
+        normalize = transforms.Normalize(mean=MEANS['derma'], std=STDS['derma'])
+        transform_test = transforms.Compose([transforms.ToTensor(), normalize])
+
+        val_dataset = Derma(args.data_dir, train=False, transform=transform_test)
+        train_dataset.nclass = 7
 
     elif args.dataset == 'imagenet':
         traindir = os.path.join(args.imagenet_dir, 'train')

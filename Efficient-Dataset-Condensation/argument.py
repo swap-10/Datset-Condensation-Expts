@@ -302,6 +302,12 @@ if args.dataset == 'oct':
     args.mix_p = 0.5
     args.dsa = True
 
+if args.dataset == 'derma':
+    args.nclass = 7
+    args.size = 28
+    args.mix_p = 0.5
+    args.dsa = True
+
 if args.dataset == 'imagenet':
     if args.net_type == 'convnet':
         args.net_type = 'resnet_ap'

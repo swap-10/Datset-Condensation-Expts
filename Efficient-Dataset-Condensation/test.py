@@ -7,8 +7,8 @@ import torch.nn.functional as F
 import torchvision
 from torch.utils.data import Subset
 from train import define_model, train
-from data import ISIC2016, OCTDataset, TensorDataset, ImageFolder, MultiEpochsDataLoader
-from data import save_img, transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion, transform_isic2016, transform_oct
+from data import ISIC2016, OCTDataset, Derma, TensorDataset, ImageFolder, MultiEpochsDataLoader
+from data import save_img, transform_imagenet, transform_cifar, transform_svhn, transform_mnist, transform_fashion, transform_isic2016, transform_oct, transform_derma
 import models.resnet as RN
 import models.densenet_cifar as DN
 from coreset import randomselect, herding
@@ -59,6 +59,8 @@ def return_data_path(args):
                 name = f'../results/isic2016/conv3in_grad_l1_nd500_cut_factor{args.factor}_lr0.005_{init}'
             elif args.dataset == 'oct':
                 name = f'../results/oct/conv3in_grad_l1_nd500_cut_factor{args.factor}_lr0.005_{init}'
+            elif args.dataset == 'derma':
+                name = f'../results/derma/conv3in_grad_l1_nd500_cut_factor{args.factor}_lr0.005_{init}'
         path_list = [f'{name}_ipc{args.ipc}']
 
     elif args.slct_type == 'dsa':
@@ -275,6 +277,8 @@ def load_data_path(args):
             transform_fn = transform_isic2016
         elif args.dataset == 'oct':
             transform_fn = transform_oct
+        elif args.dataset == 'derma':
+            transform_fn = transform_derma
         train_transform, test_transform = transform_fn(augment=args.augment, from_tensor=False)
 
         # Load condensed dataset
@@ -338,6 +342,10 @@ def load_data_path(args):
                 train_dataset = OCTDataset(args.data_dir,
                                         train=True,
                                         transform=train_transform)
+            elif args.dataset == 'derma':
+                train_dataset = Derma(args.data_dir,
+                                        train=True,
+                                        transform=train_transform)
 
             indices = randomselect(train_dataset, args.ipc, nclass=args.nclass)
             train_dataset = Subset(train_dataset, indices)
@@ -370,6 +378,10 @@ def load_data_path(args):
                                     transform=test_transform)
         elif args.dataset == 'oct':
             val_dataset = OCTDataset(args.data_dir,
+                                    train=False,
+                                    transform=test_transform)
+        elif args.dataset == 'derma':
+            val_dataset = Derma(args.data_dir,
                                     train=False,
                                     transform=test_transform)
 

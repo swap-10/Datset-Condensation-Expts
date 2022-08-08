@@ -32,6 +32,8 @@ MEANS['isic2016'] = [0.4377, 0.4438, 0.4728]
 STDS['isic2016'] = [0.1980, 0.2010, 0.1970]
 MEANS['oct'] = [0.4377, 0.4438, 0.4728]
 STDS['oct'] = [0.1980, 0.2010, 0.1970]
+MEANS['derma'] = [0.4377, 0.4438, 0.4728]
+STDS['derma'] = [0.1980, 0.2010, 0.1970]
 
 
 class TensorDataset(torch.utils.data.Dataset):
@@ -159,6 +161,41 @@ class OCTDataset(torch.utils.data.Dataset):
 
         img = torch.from_numpy(img)
         
+        return [img, label]
+
+class Derma(torch.utils.data.Dataset):
+    
+    def __init__(self, root, train=True, transform=None):
+        self.root = root
+        self.batch_size = 64
+        self.transform = transform
+        if train:
+            with np.load(os.path.join(root, 'dermamnist.npz')) as data:
+                self.images = data['train_images']
+                self.targets = data['train_labels']
+                self.targets = self.targets.squeeze()
+        else:
+            with np.load(os.path.join(root, 'dermamnist.npz')) as data:
+                self.images = data['test_images']
+                self.targets = data['test_labels']
+                self.targets = self.targets.squeeze()
+
+    
+    def __len__(self):
+        return len(self.targets)
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        img = Image.fromarray(self.images[idx]).convert('RGB')
+        label = self.targets[idx]
+        # img = transforms.ToTensor()(img)
+        img = transforms.Resize((28, 28))(img)
+
+        if self.transform:
+            img = self.transform(img)
+
         return [img, label]
 
 
@@ -417,6 +454,27 @@ def transform_oct(augment=False, from_tensor=False, normalize=True):
 
     if normalize:
         normal_fn = [transforms.Normalize(mean=MEANS['oct'], std=STDS['oct'])]
+    else:
+        normal_fn = []
+
+    train_transform = transforms.Compose(cast + aug + normal_fn)
+    test_transform = transforms.Compose(cast + normal_fn)
+
+    return train_transform, test_transform
+
+def transform_derma(augment=False, from_tensor=False, normalize=True):
+    if not augment:
+        aug = []
+    else:
+        aug = []
+
+    if from_tensor:
+        cast = []
+    else:
+        cast = [transforms.ToTensor()]
+
+    if normalize:
+        normal_fn = [transforms.Normalize(mean=MEANS['derma'], std=STDS['derma'])]
     else:
         normal_fn = []
 
@@ -792,9 +850,15 @@ def load_data(args):
     
     elif args.dataset == "oct":
         train_transform, test_transform = transform_oct(augment=args.augment)
-        train_dataset = OCTDataset(args.data_dir, train=True, transforms=train_transform)
-        val_dataset = OCTDataset(args.data_dir, train=False, transforms=test_transform)
+        train_dataset = OCTDataset(args.data_dir, train=True, transform=train_transform)
+        val_dataset = OCTDataset(args.data_dir, train=False, transform=test_transform)
         nclass = 4
+    
+    elif args.dataset == "derma":
+        train_transform, test_transform = transform_derma(augment=args.augment)
+        train_dataset = Derma(args.data_dir, train=True, transform=train_transform)
+        val_dataset = Derma(args.data_dir, train=False, transform=test_transform)
+        nclass = 7
  
     else:
         raise Exception('unknown dataset: {}'.format(args.dataset))

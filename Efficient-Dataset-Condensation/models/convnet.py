@@ -50,6 +50,7 @@ class ConvNet(nn.Module):
                 x = self.layers['pool'][d](x)
 
         # x = nn.functional.avg_pool2d(x, x.shape[-1])
+
         out = x.view(x.shape[0], -1)
         logit = self.classifier(out)
 
@@ -108,7 +109,8 @@ class ConvNet(nn.Module):
 
         in_channels = channel
         if im_size[0] == 28:
-            im_size = (32, 32)
+            # im_size = (32, 32)
+            pass
         shape_feat = [in_channels, im_size[0], im_size[1]]
 
         for d in range(net_depth):
