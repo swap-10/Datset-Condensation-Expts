@@ -139,6 +139,7 @@ def train(args, model, train_loader, val_loader, plotter=None, logger=None):
                                           mixup=args.mixup)
 
         if epoch % args.epoch_print_freq == 0:
+            print(f"EPOCH PRINT FREQ: {args.epoch_print_freq}")
             acc1, acc5, loss_val = validate(args, val_loader, model, criterion, epoch, logger)
 
             if plotter != None:

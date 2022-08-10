@@ -39,6 +39,7 @@ class ConvNet(nn.Module):
                                                     net_pooling, im_size)
         num_feat = shape_feat[0] * shape_feat[1] * shape_feat[2]
         self.classifier = nn.Linear(num_feat, num_classes)
+        self.final = nn.Softmax(dim=1)
 
     def forward(self, x, return_features=False):
         for d in range(self.depth):
@@ -53,6 +54,7 @@ class ConvNet(nn.Module):
 
         out = x.view(x.shape[0], -1)
         logit = self.classifier(out)
+        logit = self.final(logit)
 
         if return_features:
             return logit, out

@@ -172,13 +172,20 @@ class Derma(torch.utils.data.Dataset):
         if train:
             with np.load(os.path.join(root, 'dermamnist.npz')) as data:
                 self.images = data['train_images']
-                self.targets = data['train_labels']
-                self.targets = self.targets.squeeze()
+                labels = data['train_labels']
+                labels = labels.squeeze()
+                self.targets = np.zeros((labels.size, labels.max() + 1))
+                self.targets[np.arange(labels.size), labels] = 1
+                del labels
+
         else:
             with np.load(os.path.join(root, 'dermamnist.npz')) as data:
                 self.images = data['test_images']
-                self.targets = data['test_labels']
-                self.targets = self.targets.squeeze()
+                labels = data['test_labels']
+                labels = labels.squeeze()
+                self.targets = np.zeros((labels.size, labels.max() + 1))
+                self.targets[np.arange(labels.size), labels] = 1
+                del labels
 
     
     def __len__(self):
@@ -617,8 +624,15 @@ class ClassDataLoader(MultiEpochsDataLoader):
 
         self.nclass = self.dataset.nclass
         self.cls_idx = [[] for _ in range(self.nclass)]
-        for i in range(len(self.dataset)):
-            self.cls_idx[self.dataset.targets[i]].append(i)
+
+        self.int_targets = np.argmax(self.dataset.targets.to(device='cpu'), axis=1)
+        print(self.int_targets.shape)
+        if (len(self.dataset.targets.shape) == 1):
+          for i in range(len(self.dataset)):
+              self.cls_idx[self.dataset.targets[i]].append(i)
+        else:
+          for i in range(len(self.dataset)):
+            self.cls_idx[self.int_targets[i]].append(i)
         self.class_sampler = ClassBatchSampler(self.cls_idx, self.batch_size, drop_last=True)
 
         self.cls_targets = torch.tensor([np.ones(self.batch_size) * c for c in range(self.nclass)],
@@ -633,7 +647,7 @@ class ClassDataLoader(MultiEpochsDataLoader):
             indices = next(self.class_sampler.samplers[c])
 
         data = torch.stack([self.dataset[i][0] for i in indices])
-        target = torch.tensor([self.dataset.targets[i] for i in indices])
+        target = torch.tensor([self.int_targets[i] for i in indices])
         return data.cuda(), target.cuda()
 
     def sample(self):
@@ -663,8 +677,14 @@ class ClassMemDataLoader():
 
         self.nclass = dataset.nclass
         self.cls_idx = [[] for _ in range(self.nclass)]
-        for i in range(len(dataset)):
-            self.cls_idx[self.targets[i]].append(i)
+        int_targets = np.argmax(self.targets.to(device='cpu'), axis=1)
+        print(int_targets.shape)
+        if (len(self.targets.shape) == 1):
+          for i in range(len(dataset)):
+              self.cls_idx[self.targets[i]].append(i)
+        else:
+          for i in range(len(dataset)):
+            self.cls_idx[int_targets[i]].append(i)
         self.class_sampler = ClassBatchSampler(self.cls_idx, self.batch_size, drop_last=True)
         self.cls_targets = torch.tensor([np.ones(batch_size) * c for c in range(self.nclass)],
                                         dtype=torch.long,
