@@ -202,7 +202,7 @@ class Derma(torch.utils.data.Dataset):
 
         if self.transform:
             img = self.transform(img)
-
+        
         return [img, label]
 
 
@@ -625,7 +625,7 @@ class ClassDataLoader(MultiEpochsDataLoader):
         self.nclass = self.dataset.nclass
         self.cls_idx = [[] for _ in range(self.nclass)]
 
-        self.int_targets = np.argmax(self.dataset.targets.to(device='cpu'), axis=1)
+        self.int_targets = np.argmax(self.dataset.targets, axis=1)
         print(self.int_targets.shape)
         if (len(self.dataset.targets.shape) == 1):
           for i in range(len(self.dataset)):
@@ -647,7 +647,7 @@ class ClassDataLoader(MultiEpochsDataLoader):
             indices = next(self.class_sampler.samplers[c])
 
         data = torch.stack([self.dataset[i][0] for i in indices])
-        target = torch.tensor([self.int_targets[i] for i in indices])
+        target = torch.tensor([self.dataset.targets[i] for i in indices])
         return data.cuda(), target.cuda()
 
     def sample(self):

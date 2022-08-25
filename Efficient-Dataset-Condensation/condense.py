@@ -32,13 +32,19 @@ class Synthesizer():
                                 requires_grad=True,
                                 device=self.device)
         self.data.data = torch.clamp(self.data.data / 4 + 0.5, min=0., max=1.)
+        '''
         self.targets = torch.tensor([np.ones(self.ipc) * i for i in range(nclass)],
                                     dtype=torch.long,
                                     requires_grad=False,
                                     device=self.device).view(-1)
+        '''
+        self.targets = torch.tensor(np.zeros((nclass*self.ipc, nclass)))
+        for i in range(nclass * self.ipc):
+            self.targets[i, i // 10] = 1
+        int_targets = np.argmax(self.targets, axis=1)
         self.cls_idx = [[] for _ in range(self.nclass)]
         for i in range(self.data.shape[0]):
-            self.cls_idx[self.targets[i]].append(i)
+            self.cls_idx[int_targets[i]].append(i)
 
         print("\nDefine synthetic data: ", self.data.shape)
 
@@ -78,8 +84,8 @@ class Synthesizer():
                                        w_loc:w_loc + w_r] = img_part
                         w_loc += w_r
                         k += 1
-                    h_loc += h_r
 
+                    h_loc += h_r
         elif init_type == 'noise':
             pass
 
@@ -186,7 +192,7 @@ class Synthesizer():
 
         data, target = self.decode(data, target, bound=max_size)
         data, target = self.subsample(data, target, max_size=max_size)
-        return data, target
+        return data.cuda(), target.cuda()
 
     def loader(self, args, augment=True):
         """Data loader for condensed data
@@ -225,6 +231,7 @@ class Synthesizer():
 
         data_dec = torch.cat(data_dec)
         target_dec = torch.cat(target_dec)
+        print("LOADER IN TEST, TARGET DECODED:\n", target_dec)
 
         train_dataset = TensorDataset(data_dec.cpu(), target_dec.cpu(), train_transform)
 
@@ -490,6 +497,14 @@ def condense(args, logger, device='cuda'):
     # Define real dataset and loader
     trainset, val_loader = load_resized_data(args)
     if args.load_memory:
+        print("LOADING CLASSMEM")
+        '''
+        loader_real = MultiEpochsDataLoader(trainset,
+                                        batch_size=args.batch_size,
+                                        shuffle=True,
+                                        num_workers=4,
+                                        persistent_workers=True)
+        '''
         loader_real = ClassMemDataLoader(trainset, batch_size=args.batch_real)
     else:
         loader_real = ClassDataLoader(trainset,
@@ -517,6 +532,7 @@ def condense(args, logger, device='cuda'):
              dataname=args.dataset)
 
     if not args.test:
+        print("SYNSET.TEST")
         synset.test(args, val_loader, logger, bench=False)
 
     # Data distillation
@@ -529,6 +545,7 @@ def condense(args, logger, device='cuda'):
 
     logger(f"\nStart condensing with {args.match} matching for {n_iter} iteration")
     args.fix_iter = max(1, args.fix_iter)
+    called = False
     for it in range(n_iter):
         if it % args.fix_iter == 0:
             model = define_model(args, nclass).to(device)
@@ -553,6 +570,7 @@ def condense(args, logger, device='cuda'):
 
         loss_total = 0
         synset.data.data = torch.clamp(synset.data.data, min=0., max=1.)
+        print("INNER LOOP:", args.inner_loop)
         for ot in range(args.inner_loop):
             ts.set()
 
@@ -578,6 +596,7 @@ def condense(args, logger, device='cuda'):
             # Net update
             if args.n_data > 0:
                 for _ in range(args.net_epoch):
+                    called = True
                     train_epoch(args,
                                 loader_real,
                                 model,

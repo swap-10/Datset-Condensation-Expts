@@ -261,6 +261,7 @@ def train_epoch(args,
 
 
 def validate(args, val_loader, model, criterion, epoch, logger=None):
+    print("START VALIDATE\n\n")
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
